@@ -1,0 +1,16 @@
+[app/ui]
+version = 7.1.2
+modtime = 1545074016.842432000
+
+[app/launcher]
+version = 7.1.2
+modtime = 1545074016.847784000
+
+[views/hyrox_stats]
+owner = admin
+version = 7.1.2
+modtime = 1545144201.128863000
+
+[nav/default]
+version = 7.1.2
+modtime = 1545144964.365606000
