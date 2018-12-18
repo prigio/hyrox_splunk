@@ -27,7 +27,7 @@ Sample data
     "event_occurrence": "2018 Stuttgart",
     "judges_bonus": null,
     "judges_penalty": null,
-    "name": "Gieselmann, Claudia (GER)",
+    "name": "Stunning, Athlete (GER)",
     "place": "8",
     "place_ak": 1,
     "splits": {
