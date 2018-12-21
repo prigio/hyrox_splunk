@@ -1,8 +1,12 @@
 <nav search_view="search">
   <view name="hyrox_stats" default='true'/>
+  <view name="hyrox_personal"/>
+  <view name="hyrox_events_summary"/>
   <view name="search"  />
-  <view name="datasets" />
-  <view name="reports" />
-  <view name="alerts" />
-  <view name="dashboards" />
+  <collection title="Others">
+    <view name="datasets" />
+    <view name="reports" />
+    <view name="alerts" />
+    <view name="dashboards" />
+  </collection>
 </nav>

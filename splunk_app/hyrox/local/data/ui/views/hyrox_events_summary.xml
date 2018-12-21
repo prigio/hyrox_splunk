@@ -1,0 +1,28 @@
+<dashboard>
+  <label>Hyrox events summary</label>
+  <row>
+    <panel>
+      <table>
+        <title>Hyrox event summary</title>
+        <search>
+          <query>sourcetype=hyrox (category=men OR category=women)
+|  stats min(_time) as date count as "total participants" 
+       count(eval(category=="men")) as "count men" 
+       min(eval(if(category=="men",total_time,null))) as "men best time" 
+       p10(eval(if(category=="men",total_time,null))) as "men top10pct"
+       count(eval(category=="women")) as "count women" 
+       min(eval(if(category=="women",total_time,null))) as "women best time" 
+       p10(eval(if(category=="women",total_time,null))) as "women top10pct"
+   by event_occurrence division
+|  eval "men best time"=tostring('men best time',"duration"), "men top10pct"=tostring('men top10pct',"duration"),
+        "women best time"=tostring('women best time',"duration"), "women top10pct"=tostring('women top10pct',"duration"),
+        date=strftime(date,"%Y-%m-%d")</query>
+          <earliest>0</earliest>
+          <latest></latest>
+        </search>
+        <option name="drilldown">none</option>
+        <option name="refresh.display">progressbar</option>
+      </table>
+    </panel>
+  </row>
+</dashboard>

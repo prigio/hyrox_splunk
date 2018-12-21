@@ -1,0 +1,82 @@
+<form>
+  <label>Hyrox personal evolution</label>
+  <search id="perf_over_time">
+    <query>index=main sourcetype=hyrox name="$NAME$"
+| stats min(_time) as _time  max(splits.*) as * max(total_time) as "Finish time" by event_occurrence
+| rex field=event_occurrence "\d+\s+(?&lt;event_occurrence&gt;.+)"
+| eval event_occurrence=strftime(_time,"%Y-%m-%d") + " " + event_occurrence
+| untable event_occurrence split time
+</query>
+    <earliest>0</earliest>
+    <latest></latest>
+  </search>
+  <search>
+    <query>index=main sourcetype=hyrox category=$CATEGORY$ event_occurrence="$OCCURRENCE$" division="$DIVISION$" | stats count</query>
+    <earliest>0</earliest>
+    <latest>now</latest>
+    <sampleRatio>1</sampleRatio>
+    <done>
+      <set token="COMP_COUNT">$result.count$</set>
+    </done>
+  </search>
+  <search id="hyrox_events">
+    <query>index=main sourcetype=hyrox
+|  stats count min(_time) as earliest max(_time) as latest by event_occurrence division category
+| eval latest=latest+86400
+| bucket span=1d earliest
+| bucket span=1d latest</query>
+    <earliest>0</earliest>
+    <latest>now</latest>
+  </search>
+  <fieldset submitButton="false">
+    <input type="text" token="NAME_FILTER">
+      <label>Your registered name</label>
+      <default>Prigione, Paolo</default>
+    </input>
+  </fieldset>
+  <row>
+    <panel depends="$NAME_FILTER$">
+      <title>Select one of these matching results</title>
+      <table>
+        <search>
+          <query>sourcetype=hyrox name="*$NAME_FILTER$*" | dedup name | table name</query>
+          <earliest>0</earliest>
+          <latest>now</latest>
+          <progress>
+            <unset token="NAME"></unset>
+          </progress>
+        </search>
+        <option name="drilldown">row</option>
+        <option name="refresh.display">progressbar</option>
+        <drilldown>
+          <set token="NAME">$row.name$</set>
+        </drilldown>
+      </table>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <title>Performance over time for $NAME$</title>
+      <chart depends="$NAME$">
+        <search base="perf_over_time">
+          <query>search split!="Finish time" | xyseries split event_occurrence time | table split *</query>
+        </search>
+        <option name="charting.axisLabelsX.majorLabelStyle.rotation">-45</option>
+        <option name="charting.axisLabelsY.majorUnit">300</option>
+        <option name="charting.axisTitleX.visibility">collapsed</option>
+        <option name="charting.axisTitleY.text">second per split</option>
+        <option name="charting.chart">column</option>
+        <option name="charting.drilldown">none</option>
+        <option name="charting.legend.placement">top</option>
+        <option name="height">500</option>
+      </chart>
+      <table>
+        <title>Details of performance over time</title>
+        <search base="perf_over_time">
+          <query>eval time=tostring(time,"duration") | xyseries split event_occurrence time | table split *</query>
+        </search>
+        <option name="count">20</option>
+      </table>
+    </panel>
+  </row>
+</form>

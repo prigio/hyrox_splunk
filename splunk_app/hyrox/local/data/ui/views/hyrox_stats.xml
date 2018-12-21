@@ -9,15 +9,6 @@
       <set token="COMP_COUNT">$result.count$</set>
     </done>
   </search>
-  <search>
-    <query>index=main sourcetype=hyrox category=$CATEGORY$ event_occurrence="$OCCURRENCE$" division="$DIVISION$" | stats count</query>
-    <earliest>0</earliest>
-    <latest>now</latest>
-    <sampleRatio>1</sampleRatio>
-    <done>
-      <set token="COMP_COUNT">$result.count$</set>
-    </done>
-  </search>
   <search id="hyrox_events">
     <query>index=main sourcetype=hyrox
 |  stats count min(_time) as earliest max(_time) as latest by event_occurrence division category
@@ -28,39 +19,51 @@
     <latest>now</latest>
   </search>
   <fieldset submitButton="false">
-    <input type="text" token="YOU">
-      <label>Your registered name</label>
-      <default>Prigione, Paolo</default>
+    <input type="text" token="NAME_FILTER">
+      <label>Search an athlete</label>
+      <default></default>
     </input>
   </fieldset>
   <row>
-    <panel>
-      <title>Your results</title>
+    <panel depends="$NAME_FILTER$">
+      <title>Select one of these matching results</title>
       <table>
         <search>
-          <query>sourcetype=hyrox name="$YOU$*"
-| eval "finish time"=tostring(total_time,"duration")
-| table name event_occurrence division category "finish time" place place_ak judge*</query>
+          <query>sourcetype=hyrox name="*$NAME_FILTER$*"
+| eval "finish time"=tostring(total_time,"duration"),
+        date=strftime(_time,"%Y-%m-%d")
+| replace "null" with "-" in judges_penalty judges_bonus
+| table name event_occurrence date division category "finish time" place place_ak judges_bonus judges_penalty
+| rename event_occurrence as event place_ak as "place AK" judges_bonus as bonus judges_penalty as penalty
+| sort -date</query>
           <earliest>0</earliest>
           <latest>now</latest>
+          <progress>
+            <unset token="NAME"></unset>
+          </progress>
         </search>
         <option name="drilldown">row</option>
         <option name="refresh.display">progressbar</option>
         <drilldown>
-          <set token="YOUR_OCCURRENCE">$row.event_occurrence$</set>
-          <set token="form.OCCURRENCE">$row.event_occurrence$</set>
-          <set token="OCCURRENCE">$row.event_occurrence$</set>
+          <set token="YOUR_OCCURRENCE">$row.event$</set>
+          <set token="form.OCCURRENCE">$row.event$</set>
+          <set token="OCCURRENCE">$row.event$</set>
           <set token="form.DIVISION">$row.division$</set>
           <set token="DIVISION">$row.division$</set>
           <set token="form.CATEGORY">$row.category$</set>
           <set token="CATEGORY">$row.category$</set>
+          <set token="NAME">$row.name$</set>
         </drilldown>
       </table>
+      <html depends="$NAME$">See the evolution of athlete $NAME$ over time using the <button>
+          <a target="_blank" href="hyrox_personal?form.NAME_FILTER=$NAME$&amp;NAME=$NAME$">hyrox personal dashboard</a>
+        </button>
+      </html>
     </panel>
   </row>
   <row>
     <panel>
-      <title>Compare your performance to others</title>
+      <title>Compare the chosen performance to others</title>
       <input type="dropdown" token="OCCURRENCE">
         <label>Event occurrence</label>
         <fieldForLabel>event_occurrence</fieldForLabel>
@@ -87,13 +90,13 @@
         </search>
         <choice value="*">any</choice>
       </input>
-      <chart depends="$COMP_COUNT$">
-        <title>Comparing your performance at $YOUR_OCCURRENCE$ to other $COMP_COUNT$ performances at $OCCURRENCE$</title>
+      <chart depends="$NAME$">
+        <title>Comparing performance of $NAME$ at $YOUR_OCCURRENCE$ to other $COMP_COUNT$ performances at $OCCURRENCE$</title>
         <search>
           <query>index=main sourcetype=hyrox category=$CATEGORY$ event_occurrence="$OCCURRENCE$" division="$DIVISION$"
 | stats p10(splits.*) as top10pct.* p25(splits.*) as top25pct.* p50(splits.*) as median.* p75(splits.*) as bot25pct.* p90(splits.*) as bot10pct.* p99(splits.*) as bot1pct.*
 |  appendcols 
-    [ search index=main sourcetype=hyrox event_occurrence="$YOUR_OCCURRENCE$" name="$YOU$*" | table splits.* | rename splits.* as you.*]
+    [ search index=main sourcetype=hyrox event_occurrence="$YOUR_OCCURRENCE$" name="$NAME$*" | table splits.* | rename splits.* as you.*]
     | untable division metric value
 | rex field=metric "(?&lt;placement&gt;[^\.]+)\.(?&lt;split&gt;.+)"
 | xyseries split placement value
@@ -105,7 +108,7 @@
         <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
         <option name="charting.axisLabelsX.majorLabelStyle.rotation">-45</option>
         <option name="charting.axisLabelsY.majorUnit">300</option>
-        <option name="charting.axisTitleX.visibility">visible</option>
+        <option name="charting.axisTitleX.visibility">collapsed</option>
         <option name="charting.axisTitleY.text">seconds per split</option>
         <option name="charting.axisTitleY.visibility">visible</option>
         <option name="charting.axisTitleY2.visibility">visible</option>
@@ -135,32 +138,31 @@
         <option name="charting.layout.splitSeries.allowIndependentYRanges">0</option>
         <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
         <option name="charting.legend.mode">standard</option>
-        <option name="charting.legend.placement">right</option>
+        <option name="charting.legend.placement">top</option>
         <option name="charting.lineWidth">2</option>
         <option name="trellis.enabled">0</option>
         <option name="trellis.scales.shared">1</option>
         <option name="trellis.size">medium</option>
       </chart>
-      <table>
-        <title>Details of your performance at $YOUR_OCCURRENCE$</title>
+      <table depends="$NAME$">
         <search>
           <query>index=main sourcetype=hyrox 
           ((category=$CATEGORY$ event_occurrence="$OCCURRENCE$" division="$DIVISION$") 
-          OR (event_occurrence="$YOUR_OCCURRENCE$" name="$YOU$*"))
-| eval name=if(match(name,"$YOU$*") and event_occurrence="$YOUR_OCCURRENCE$", "you", "others")
+          OR (event_occurrence="$YOUR_OCCURRENCE$" name="$NAME$*"))
+| eval name=if(name=="$NAME$" and event_occurrence="$YOUR_OCCURRENCE$", "you", "others")
 | table name total_time splits.*
 | rename splits.* as * total_time as "Finish time"
 | untable name split value
 | sort +split +value
 | streamstats count as seq by split
-| eventstats count as tot min(value) as best_time by split
+| eventstats count as tot min(value) as "best time" by split
 | search name="you"
-| eval time_diff = value - best_time
-| rename value as your_time
-| eval your_time=tostring(your_time,"duration"), 
-       best_time=tostring(best_time,"duration"),
-       your_ranking = seq . "/" . tot
-| table split your_time your_ranking best_time time_diff
+| rename value as "your time"
+| eval "seconds diff" = if(not isnull('your time'), 'your time' - 'best time' , null),
+       "your time"=tostring('your time',"duration"), 
+       "best time"=tostring('best time',"duration"),
+       "your ranking" = if(not isnull('your time'), seq . "/" . tot, null)
+| table split "your time" "your ranking" "best time" "seconds diff"
 </query>
           <earliest>0</earliest>
           <latest>now</latest>
