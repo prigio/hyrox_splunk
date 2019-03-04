@@ -35,7 +35,7 @@
 | replace "null" with "-" in judges_penalty judges_bonus
 | table name event_occurrence date division category "finish time" place place_ak judges_bonus judges_penalty
 | rename event_occurrence as event place_ak as "place AK" judges_bonus as bonus judges_penalty as penalty
-| sort -date</query>
+| sort 0 -date</query>
           <earliest>0</earliest>
           <latest>now</latest>
           <progress>
@@ -94,13 +94,20 @@
         <title>Comparing performance of $NAME$ at $YOUR_OCCURRENCE$ to other $COMP_COUNT$ performances at $OCCURRENCE$</title>
         <search>
           <query>index=main sourcetype=hyrox category=$CATEGORY$ event_occurrence="$OCCURRENCE$" division="$DIVISION$"
-| stats p10(splits.*) as top10pct.* p25(splits.*) as top25pct.* p50(splits.*) as median.* p75(splits.*) as bot25pct.* p90(splits.*) as bot10pct.* p99(splits.*) as bot1pct.*
+| stats p10(splits.*) as top10pct.* 
+        p20(splits.*) as top20pct.*
+        p30(splits.*) as top30pct.*
+        p40(splits.*) as top40pct.*
+        p50(splits.*) as median.* 
+        p75(splits.*) as bot25pct.* 
+        p90(splits.*) as bot10pct.* 
+        p99(splits.*) as bot1pct.*
 |  appendcols 
     [ search index=main sourcetype=hyrox event_occurrence="$YOUR_OCCURRENCE$" name="$NAME$*" | table splits.* | rename splits.* as you.*]
     | untable division metric value
 | rex field=metric "(?&lt;placement&gt;[^\.]+)\.(?&lt;split&gt;.+)"
 | xyseries split placement value
-| table split top10pct top25pct median bot25pct bot10pct bot1pct you</query>
+| table split top10pct top20pct top30pct top40pct median bot25pct bot10pct bot1pct you</query>
           <earliest>0</earliest>
           <latest>now</latest>
           <sampleRatio>1</sampleRatio>
@@ -133,7 +140,7 @@
         <option name="charting.chart.stackMode">default</option>
         <option name="charting.chart.style">shiny</option>
         <option name="charting.drilldown">none</option>
-        <option name="charting.fieldColors">{"top10pct":0x65a637, "top25pct":0xa2cc3e, "median":0xf2b827, "bot25pct":0xed8440, "bot10pct":0xd93f3c, "bot1pct":0x262626,  "you":0x6db7c6}</option>
+        <option name="charting.fieldColors">{"top10pct":0x31a35f, "top20pct":0x65a637, "top30pct":0xa2cc3e, "top40pct":0xf7bc38, "median":0xea9600, "bot25pct":0xed8440, "bot10pct":0xd93f3c, "bot1pct":0x555555,  "you":0x6db7c6}</option>
         <option name="charting.layout.splitSeries">0</option>
         <option name="charting.layout.splitSeries.allowIndependentYRanges">0</option>
         <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
@@ -147,26 +154,46 @@
       <table depends="$NAME$">
         <search>
           <query>index=main sourcetype=hyrox 
-          ((category=$CATEGORY$ event_occurrence="$OCCURRENCE$" division="$DIVISION$") 
-          OR (event_occurrence="$YOUR_OCCURRENCE$" name="$NAME$*"))
+          ((category="$CATEGORY$" event_occurrence="$OCCURRENCE$" division="$DIVISION$") 
+          OR (event_occurrence="$YOUR_OCCURRENCE$" name="*$NAME$*"))
 | eval name=if(name=="$NAME$" and event_occurrence="$YOUR_OCCURRENCE$", "you", "others")
 | table name total_time splits.*
 | rename splits.* as * total_time as "Finish time"
 | untable name split value
-| sort +split +value
+| sort 0 +split +value
 | streamstats count as seq by split
-| eventstats count as tot min(value) as "best time" by split
+| eventstats count as tot by split
 | search name="you"
 | rename value as "your time"
-| eval "seconds diff" = if(not isnull('your time'), 'your time' - 'best time' , null),
-       "your time"=tostring('your time',"duration"), 
-       "best time"=tostring('best time',"duration"),
-       "your ranking" = if(not isnull('your time'), seq . "/" . tot, null)
-| table split "your time" "your ranking" "best time" "seconds diff"
+| eval "your ranking" = if(not isnull('your time'), seq . "/" . tot, null)
+| table split "your time" "your ranking"
+| join split usetime=false 
+    [search index=main sourcetype=hyrox category="$CATEGORY$" event_occurrence="$OCCURRENCE$" division="$DIVISION$"
+| stats p10(splits.*) as top10pct.* 
+        p20(splits.*) as top20pct.*
+        p30(splits.*) as top30pct.*
+        p40(splits.*) as top40pct.*
+        p50(splits.*) as median.* 
+        p75(splits.*) as bot25pct.* 
+        p90(splits.*) as bot10pct.* 
+        p99(splits.*) as bot1pct.*
+    | untable division metric value
+| rex field=metric "(?&lt;placement&gt;[^\.]+)\.(?&lt;split&gt;.+)"
+| xyseries split placement value
+| table split top10pct top20pct top30pct top40pct median bot25pct bot10pct bot1pct ]
+| eval "your time"=tostring('your time',"duration"),
+       top10pct=tostring('top10pct',"duration"), 
+       top20pct=tostring('top20pct',"duration"), 
+       top30pct=tostring('top30pct',"duration"), 
+       top40pct=tostring('top40pct',"duration"),
+       median=tostring('median',"duration"),
+       bot25pct=tostring('bot25pct',"duration"),
+       bot10pct=tostring('bot10pct',"duration"),
+       bot1pct=tostring('bot1pct',"duration")
+| table split "your time" "your ranking" top* median bot25pct bot10pct bot1pct
 </query>
           <earliest>0</earliest>
           <latest>now</latest>
-          <sampleRatio>1</sampleRatio>
         </search>
         <option name="count">20</option>
       </table>

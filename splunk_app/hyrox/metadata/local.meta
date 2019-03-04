@@ -9,7 +9,7 @@ modtime = 1545074016.847784000
 [views/hyrox_stats]
 owner = admin
 version = 7.1.2
-modtime = 1545234308.980337000
+modtime = 1551715948.339681000
 
 [nav/default]
 version = 7.1.2
@@ -23,4 +23,4 @@ modtime = 1545232967.016871000
 [views/hyrox_events_summary]
 owner = admin
 version = 7.1.2
-modtime = 1545235280.611625000
+modtime = 1551711256.046241000
