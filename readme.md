@@ -7,17 +7,26 @@ Update the `events` data structure within `download_data.py` with the updated ev
 ```bash
 virtualenv venv
 source venv/bin/activate
-pip install -r pip_requirements.py
+pip3 install -r pip_requirements.py
 
-python download_data.py
+python3 download_data.py
 ```
 
-Ingest the data within splunk:
+## Ingest the data within splunk
 
 `splunk add oneshot <filename> -sourcetype hyrox`
 
+## In case of duplicates within the Hyrox data
+The website might duplicate data. When stored, the links must be modified to remove the page number, then `|sort|uniq` the data.
 
-Sample data
+
+    cat Hyrox\ -\ 2019\ Hannover.json \
+    | sed 's/page=.&//g' \
+    | sort | uniq \
+    > data_files/Hyrox\ -\ 2019\ Hannover.json
+
+
+## Sample data
 
 ```json
 	{
