@@ -4,14 +4,14 @@
 events = [
 	dict(
 		event_name="Hyrox", 
-		event_main_group = "2019 Hannover",
-		event_date="2019-01-26", 
+		event_main_group = "2019 Karlsruhe",
+		event_date="2019-03-30", 
 		base_url="http://hyrox.r.mikatiming.de",
 		rankings = [
-			dict(event_id="H_999999212F07B50000000065", category="men", division="regular"),
-			dict(event_id="H_999999212F07B50000000065", category="women", division="regular"),
-			dict(event_id="HPRO_999999212F07B50000000065", category="men", division="pro"),
-			dict(event_id="HPRO_999999212F07B50000000065", category="women", division="pro")
+			dict(event_id="H_999999212F07B50000000067", category="men", division="regular"),
+			dict(event_id="H_999999212F07B50000000067", category="women", division="regular"),
+			dict(event_id="HPRO_999999212F07B50000000067", category="men", division="pro"),
+			dict(event_id="HPRO_999999212F07B50000000067", category="women", division="pro")
 		]
 	),
 	dict(
@@ -24,6 +24,19 @@ events = [
 			dict(event_id="H_999999212F07B50000000066", category="women", division="regular"),
 			dict(event_id="HPRO_999999212F07B50000000066", category="men", division="pro"),
 			dict(event_id="HPRO_999999212F07B50000000066", category="women", division="pro")
+		]
+	),
+
+	dict(
+		event_name="Hyrox", 
+		event_main_group = "2019 Hannover",
+		event_date="2019-01-26", 
+		base_url="http://hyrox.r.mikatiming.de",
+		rankings = [
+			dict(event_id="H_999999212F07B50000000065", category="men", division="regular"),
+			dict(event_id="H_999999212F07B50000000065", category="women", division="regular"),
+			dict(event_id="HPRO_999999212F07B50000000065", category="men", division="pro"),
+			dict(event_id="HPRO_999999212F07B50000000065", category="women", division="pro")
 		]
 	),
 	dict(
