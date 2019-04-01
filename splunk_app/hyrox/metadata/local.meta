@@ -13,7 +13,7 @@ modtime = 1551715948.339681000
 
 [nav/default]
 version = 7.1.2
-modtime = 1545235487.993611000
+modtime = 1551776361.180678000
 
 [views/hyrox_personal]
 owner = admin
@@ -24,3 +24,8 @@ modtime = 1545232967.016871000
 owner = admin
 version = 7.1.2
 modtime = 1551711256.046241000
+
+[views/athlete_comparison]
+owner = admin
+version = 7.1.2
+modtime = 1551781678.882614000

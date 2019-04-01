@@ -77,18 +77,36 @@ def parse_personal_page(http_response, event_date, keep_splits_without_time=True
 		exclude_splits = ()
 	#css_fullname = CSSSelector("div.detail-box.box-general td.f-__fullname")
 	#fullname = css_fullname(tree)[0].text.strip()
-	
+	try:
+		css_start_number = CSSSelector("div.detail-box.box-general td.f-start_no_text")
+		# for hyrox, startnumber is hh|mm|sequential
+		# if the starttime is before 10am, the start number has only 5 digits
+		personal_data['start_number'] = css_start_number(tree)[0].text.strip().zfill(6)
+		personal_data['start_time'] = (event_date + datetime.timedelta(hours=int(personal_data['start_number'][0:2]), minutes=int(personal_data['start_number'][2:4]))).strftime("%Y-%m-%d %H:%M:%S")
+	except:
+		personal_data['start_number'] = None
+		personal_data['start_time'] = None
+		print("Failed to retrieve start_number at url='%s'" % http_response.url)
 
-	css_start_number = CSSSelector("div.detail-box.box-general td.f-start_no_text")
+	css_age_group = CSSSelector("div.detail-box.box-general td.f-age_class")
 	# for hyrox, startnumber is hh|mm|sequential
 	# if the starttime is before 10am, the start number has only 5 digits
-	personal_data['start_number'] = css_start_number(tree)[0].text.strip().zfill(6)
-	personal_data['start_time'] = (event_date + datetime.timedelta(hours=int(personal_data['start_number'][0:2]), minutes=int(personal_data['start_number'][2:4]))).strftime("%Y-%m-%d %H:%M:%S")
+	try: 
+		personal_data['age_group'] = css_age_group(tree)[0].text.strip()
+	except:
+		personal_data['age_group'] = None
+		print("Failed to retrieve age_group at url='%s'" % http_response.url)
 
 	css_place = CSSSelector("div.detail-box.box-totals td.f-place_all")
-	personal_data['place'] = css_place(tree)[0].text.strip()
-	try: personal_data['place'] = int(personal_data['place'])
-	except: pass
+	
+	try: 
+		personal_data['place'] = css_place(tree)[0].text.strip()
+		try: personal_data['place'] = int(personal_data['place'])
+		except: pass
+	except: 
+		personal_data['place'] = None
+		print("Failed to retrieve place at url='%s'" % http_response.url)
+
 	css_total_time = CSSSelector("div.detail-box.box-totals td.f-time_finish_netto")
 	personal_data['total_time'] = duration_to_seconds(css_total_time(tree)[0].text.strip())
 	
@@ -109,19 +127,23 @@ def parse_personal_page(http_response, event_date, keep_splits_without_time=True
 
 	splits = OrderedDict()
 	i = 1
-	for row in css_run_tablerow(tree):
-		split = css_run_header(row)[0].text
-		if split != None and split.strip() not in exclude_splits:
-			split = split.strip()
-			time = css_run_time(row)[0].text
-			if time != None:
-				time = duration_to_seconds(time.strip())
+	try:
+		for row in css_run_tablerow(tree):
+			split = css_run_header(row)[0].text
+			if split != None and split.strip() not in exclude_splits:
+				split = split.strip()
+				time = css_run_time(row)[0].text
+				if time != None:
+					time = duration_to_seconds(time.strip())
+			
+				if time!=None or keep_splits_without_time:
+					splits["%02d_%s" % (i, split)] = time
+					i += 1
+		personal_data['splits'] = splits
+	except:
+		personal_data['splits'] = None
+		print("Failed to retrieve splits at url='%s'" % http_response.url)
 		
-			if time!=None or keep_splits_without_time:
-				splits["%02d_%s" % (i, split)] = time
-				i += 1
-	personal_data['splits'] = splits
-	
 	return personal_data
 
 
